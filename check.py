@@ -1,5 +1,5 @@
 """Alerta Booking Bratislava -> Telegram. Solo stdlib."""
-import json, math, os, sys, urllib.parse, urllib.request
+import html, json, math, os, sys, urllib.parse, urllib.request
 from datetime import datetime, timezone, timedelta
 
 CHECK_IN, CHECK_OUT = "2026-12-29", "2027-01-03"
@@ -10,7 +10,7 @@ MAX_KM = 2.0
 CENTER = (48.1437, 17.1077)  # Hlavne namestie
 ALLOWED_TYPES = {"hotel", "apartment", "aparthotel"}
 BUDGET_USD = 4.6         # margen bajo los 5 $ gratis de Apify por ciclo
-DEFAULT_RUN_COST = 0.06  # se recalcula con el coste real de cada búsqueda
+DEFAULT_RUN_COST = 0.06  # se recalcula con el coste real de cada busqueda
 MIN_INTERVAL_H, MAX_INTERVAL_H = 1, 24
 LAST_CHECK = datetime(2026, 12, 28, 23, 59, tzinfo=timezone.utc)
 STATE_FILE = "state.json"
@@ -88,11 +88,11 @@ def main():
         print(f"Presupuesto del ciclo agotado ({used:.2f} $). Espero al siguiente ciclo."); return
     horizon_h = (min(cycle_end, LAST_CHECK) - now).total_seconds() / 3600
     interval_h = min(MAX_INTERVAL_H, max(MIN_INTERVAL_H, horizon_h / (remaining / run_cost)))
-    print(f"Gastado {used:.2f} $, quedan {remaining:.2f} $, coste/búsqueda {run_cost:.3f} $, "
+    print(f"Gastado {used:.2f} $, quedan {remaining:.2f} $, coste/busqueda {run_cost:.3f} $, "
           f"horas restantes {horizon_h:.0f} -> intervalo {interval_h:.1f} h")
     if state["last_run"] and not FORCE:
         if now - datetime.fromisoformat(state["last_run"]) < timedelta(hours=interval_h - 0.25):
-            print("Aún no toca."); return
+            print("Aun no toca."); return
 
     items = []
     for t in ("Hotels", "Apartments"):
@@ -127,10 +127,10 @@ def main():
                 f"?checkin={CHECK_IN}&checkout={CHECK_OUT}&group_adults=2&no_rooms=1&selected_currency=EUR"
             alerts.append(
                 f"<b>{reason}</b>{' · OFERTA' if deal and reason != 'Ahora en oferta' else ''}\n"
-                f"<a href=\"{url}\">{it.get('name')}</a> ({it.get('type')})\n"
+                f"<a href=\"{html.escape(url)}\">{html.escape(str(it.get('name')))}</a> ({it.get('type')})\n"
                 f"{price:.0f} € total · {price / NIGHTS:.0f} €/noche · nota {rating} · {dist:.1f} km")
 
-    try:  # coste real de esta búsqueda (media móvil)
+    try:  # coste real de esta busqueda (media movil)
         after, _ = apify_usage()
         if after > used:
             state["run_cost"] = round(0.7 * run_cost + 0.3 * (after - used), 4)
