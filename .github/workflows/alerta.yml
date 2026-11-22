@@ -1,0 +1,39 @@
+name: Alerta Booking Bratislava
+
+on:
+  schedule:
+    - cron: "17 * * * *"   # cada hora; el script decide si toca según el presupuesto de Apify
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Buscar ahora sin esperar al intervalo"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+concurrency: alerta
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Buscar y avisar
+        env:
+          APIFY_TOKEN: ${{ secrets.APIFY_TOKEN }}
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          FORCE: ${{ inputs.force }}
+        run: python check.py
+      - name: Guardar estado
+        run: |
+          git config user.name "alerta-bot"
+          git config user.email "alerta-bot@users.noreply.github.com"
+          git add state.json 2>/dev/null || true
+          git diff --cached --quiet || (git commit -m "estado" && git push)
